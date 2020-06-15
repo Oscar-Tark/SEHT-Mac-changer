@@ -4,11 +4,13 @@
 #include <time.h>
 #include <string.h>
 #include <errno.h>
+#include <ctype.h>
 
 extern int errno;
 
 unsigned short int rand_get()
 {
+	//use isxdigit??
 	return (unsigned short int)(rand() % 16);
 }
 
@@ -17,17 +19,29 @@ void set_addr(unsigned short int octets[])
 	//PROBLEMS WITH FGETS NEWLINE
 	char change_command[64];
 	char device[8];
+	char down[64];
+	char up[64];
+
 	printf("Device to change:\n");
 	fgets(device, 8, stdin);
-	snprintf(change_command, 64, "%s %s %s %.2x:%.2x:%.2x:%.2x:%.2x:%.2x", "ifconfig", device, "hw ether", octets[0], octets[1], octets[2], octets[3], octets[4], octets[5]);
-	printf("\nCommand: %s", change_command);
-	system("ifconfig wlp3s0 down");
-	if(system(change_command) == -1)
-		perror("\n[Error] Could not change your MAC address");
+	device[strlen(device) -1] = '\0';
+	snprintf(change_command, 64, "%s %s %s 00:%.2x:%.2x:%.2x:%.2x:%.2x", "ifconfig", device, "hw ether", /*octets[0],*/ octets[1], octets[2], octets[3], octets[4], octets[5]);
+	snprintf(down, 64, "ifconfig %s down", device);
+	snprintf(up, 64, "ifconfig %s up", device);
+	printf("\nAddress command to be issued: %s", change_command);
+	if(system(down) != -1)
+	{
+		if(system(change_command) == -1)
+			perror("\n[Error] Could not change your MAC address");
+		else
+			printf("\n[Ok]");
+	}
 	else
-		printf("\n[Ok]");
+	{
+		perror("\n[Error] Could not set device down");
+	}
 	printf("\n[Error no.] %d", errno);
-	system("ifconfig wlp3s0 up");
+	system(up);
 	return;
 }
 
@@ -50,7 +64,7 @@ void new_addr(char* addr[])
 
 int main(void)
 {
-	printf("[Message]Oscars MAC/Hardware Address Changer <2020> Do as you wish.. Its free code\nWARNING! This program will change your MAC address. Some interfaces may set the IG bit to 1\n");
+	printf("[Message]Oscars MAC/Hardware Address Changer <2020> Do as you wish.. Its free code\nWARNING! This program will change your MAC address. Some interfaces may set the IG bit to 1\nPlease remember to disconnect to any network before running this program. This feature will be added in the future...\n");
 	char* addr[6];
 	new_addr(addr);
 	return 0;
